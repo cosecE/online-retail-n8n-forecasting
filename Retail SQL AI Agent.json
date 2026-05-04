@@ -1,0 +1,123 @@
+{
+  "name": "Retail SQL AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6c24caea-c269-4a5a-abba-fec0e4721e84",
+      "name": "When chat message received",
+      "webhookId": "15117fb5-2f02-416e-a024-bfca5ab1b2e3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an AI assistant that queries a MySQL database.\n\nTable:\nsales(date, description, units_sold, revenue, avg_price, cluster_id)\n\nRules:\n- Only use SELECT queries\n- Revenue is already computed\n- Use cluster_id when relevant\n- Do not modify data\n\nIMPORTANT:\nYou MUST use the MySQL tool to answer questions.\nDo not just return SQL — execute it using the tool and explain the result.\nAlways alias aggregate results (e.g. COUNT(*) AS total_rows) so results are readable.\nAfter executing the query, summarize the returned data in plain English in 1-2 sentences.\n\nThere is another table:\n\nproduct_clusters(description, cluster_id)\n\nWhen cluster-related questions are asked:\n- Join sales and product_clusters on description\n- Use LOWER() if needed to match text\n\nWhen joining tables, use:\nLOWER(s.description) LIKE CONCAT('%', pc.description, '%')\n\nWhen answering cluster-related questions:\n- Always group by cluster_id\n- Never group by product description\n- The output should include cluster_id, not product names"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "18b62da2-dc24-4b95-a7fe-362f024b1f2a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        208,
+        160
+      ],
+      "id": "64101c76-1c0b-47b9-9665-d23a70f59d01",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "LHOZkvlU3GscxYp7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query', 'A valid MySQL SELECT query based on the user request. Always return meaningful columns, never just a number without context. Example: SELECT COUNT(*) as total_rows FROM sales') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        352,
+        208
+      ],
+      "id": "38ffad8a-b5e5-4e65-b837-741d566154d3",
+      "name": "Execute a SQL query in MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "kTWCSVzPkrOuMhjj",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d22a4695-92ef-4f9e-b21d-582ad970af4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0cd286e89e7e19af19cb4fff8b5ce3278e928f5ed74abe8fd5d81f78dbe69815"
+  },
+  "id": "wRDBL5b464dbjmGN45jym",
+  "tags": []
+}
